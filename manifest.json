@@ -1,0 +1,7 @@
+{
+    "dependencies": {
+        "github.com/ianr0bkny/go-sonos": {
+            "branch": "master"
+        }
+    }
+}

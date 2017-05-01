@@ -1,0 +1,13 @@
+{
+    "memo": "",
+    "projects": [
+        {
+            "name": "github.com/ianr0bkny/go-sonos",
+            "branch": "master",
+            "revision": "a533fb3df081d5f6f4ededcb599b4aa8fdcbd336",
+            "packages": [
+                "ssdp"
+            ]
+        }
+    ]
+}
