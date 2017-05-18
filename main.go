@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
-	"runtime"
+	"time"
 
 	"strings"
 
@@ -12,57 +14,82 @@ import (
 )
 
 func main() {
-	log.Print("Searching for Sonos\n")
+	log.SetFlags(0)
+	log.SetOutput(ioutil.Discard)
+
+	fmt.Println("Searching for Sonos")
+	for _, n := range interfaceNames() {
+		findAndDisableOn(n)
+	}
+
+	fmt.Println("Finished")
+	time.Sleep(time.Second * 5)
+
+}
+
+func findAndDisableOn(network string) {
+	log.Println("Searching on network adapter", network)
+	defer func() {
+		if r := recover(); r != nil {
+			//fmt.Println("Error", r)
+		}
+	}()
 
 	mgr := ssdp.MakeManager()
-	mgr.Discover(guessMainInterfaceName(), "11209", false)
+	err := mgr.Discover(network, "11209", false)
+	if err != nil {
+		log.Println(err)
+		mgr.Close()
+		return
+	}
+
 	qry := ssdp.ServiceQueryTerms{
 		ssdp.ServiceKey("schemas-upnp-org-ContentDirectory"): -1,
 	}
 	result := mgr.QueryServices(qry)
 	if dev_list, has := result["schemas-upnp-org-ContentDirectory"]; has {
 		for _, dev := range dev_list {
+			if dev.Product() != "Sonos" {
+				continue
+			}
+
 			location := string(dev.Location())
 			address := strings.Replace(location, ":1400/xml/device_description.xml", "", 1)
 			ip := strings.Replace(address, "http://", "", 1)
-			log.Printf("Found %s %s\n", dev.Product(), ip)
+			fmt.Println("Found Sonos", ip)
 
 			// wifictrl request succeeded HTTP 200 OK
 			resp, err := http.Get(address + ":1400/wifictrl?wifi=persist-off")
 			if err != nil {
-				log.Println(err)
+				fmt.Println(err)
 			}
 			defer resp.Body.Close()
 			if resp.StatusCode == 200 {
-				log.Println("Disabled WiFi for", dev.Product(), ip)
+				fmt.Println(" -> Disabled WiFi for", ip)
 			}
-			break
 		}
 	}
 	mgr.Close()
 }
 
-func guessMainInterfaceName() string {
+func interfaceNames() []string {
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		panic(err)
 	}
+
+	var ifs []string
 
 	for _, i := range ifaces {
 		addrs, _ := i.Addrs()
 		for _, addr := range addrs {
 			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 				if ipnet.IP.To4() != nil {
-					log.Println("Searching on network adapter", i.Name)
-					return i.Name
+					ifs = append(ifs, i.Name)
 				}
 			}
 		}
 	}
 
-	if runtime.GOOS == "darwin" {
-		return "en1"
-	}
-
-	return "eth0"
+	return ifs
 }
