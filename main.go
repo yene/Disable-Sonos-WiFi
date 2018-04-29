@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
-	"net/http"
 	"time"
 
 	"strings"
@@ -56,17 +55,8 @@ func findAndDisableOn(network string) {
 			location := string(dev.Location())
 			address := strings.Replace(location, ":1400/xml/device_description.xml", "", 1)
 			ip := strings.Replace(address, "http://", "", 1)
-			fmt.Println("Found Sonos", ip)
-
-			// wifictrl request succeeded HTTP 200 OK
-			resp, err := http.Get(address + ":1400/wifictrl?wifi=persist-off")
-			if err != nil {
-				fmt.Println(err)
-			}
-			defer resp.Body.Close()
-			if resp.StatusCode == 200 {
-				fmt.Println(" -> Disabled WiFi for", ip)
-			}
+			url := "http://" + ip + ":1400/wifictrl?wifi=persist-off"
+			fmt.Println("Found Sonos, open this URL and disable WiFi by selecting Persist Off", url)
 		}
 	}
 	mgr.Close()
