@@ -55,7 +55,7 @@ func findAndDisableOn(network string) {
 			location := string(dev.Location())
 			address := strings.Replace(location, ":1400/xml/device_description.xml", "", 1)
 			ip := strings.Replace(address, "http://", "", 1)
-			url := "http://" + ip + ":1400/wifictrl?wifi=persist-off"
+			url := "http://" + ip + ":1400/wifictrl"
 			fmt.Println("Found Sonos, open this URL and disable WiFi by selecting Persist Off", url)
 		}
 	}
